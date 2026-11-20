@@ -422,6 +422,9 @@ struct mana_port_context {
 
 	u16 port_idx;
 
+	/* Maximum speed supported by the SKU (Mbps) */
+	u32 max_speed;
+
 	bool port_is_up;
 	bool port_st_save; /* Saved port state */
 
@@ -475,12 +478,29 @@ enum mana_command_code {
 	MANA_CONFIG_VPORT_RX	= 0x20007,
 	MANA_QUERY_VPORT_CONFIG	= 0x20008,
 
+	MANA_QUERY_LINK_CONFIG	= 0x2000A,
+
 	/* Privileged commands for the PF mode */
 	MANA_REGISTER_FILTER	= 0x28000,
 	MANA_DEREGISTER_FILTER	= 0x28001,
 	MANA_REGISTER_HW_PORT	= 0x28003,
 	MANA_DEREGISTER_HW_PORT	= 0x28004,
 };
+
+/* Query Link Configuration */
+struct mana_query_link_config_req {
+	struct gdma_req_hdr hdr;
+	mana_handle_t vport;
+}; /* HW DATA */
+
+struct mana_query_link_config_resp {
+	struct gdma_resp_hdr hdr;
+	u32 qos_speed_mbps;
+	u8 qos_unconfigured;
+	u8 reserved1[3];
+	u32 link_speed_mbps;
+	u8 reserved2[4];
+}; /* HW DATA */
 
 /* Query Device Configuration */
 struct mana_query_device_cfg_req {
@@ -686,6 +706,7 @@ struct mana_tx_package {
 	struct gdma_posted_wqe_info wqe_info;
 };
 
+int mana_query_link_cfg(struct mana_port_context *apc);
 int mana_create_wq_obj(struct mana_port_context *apc,
 		       mana_handle_t vport,
 		       u32 wq_type, struct mana_obj_spec *wq_spec,

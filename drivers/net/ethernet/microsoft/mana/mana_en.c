@@ -1154,6 +1154,41 @@ out:
 	return err;
 }
 
+int mana_query_link_cfg(struct mana_port_context *apc)
+{
+	struct mana_query_link_config_resp resp = {};
+	struct mana_query_link_config_req req = {};
+	struct net_device *ndev = apc->ndev;
+	int err;
+
+	mana_gd_init_req_hdr(&req.hdr, MANA_QUERY_LINK_CONFIG,
+			     sizeof(req), sizeof(resp));
+	req.vport = apc->port_handle;
+	req.hdr.resp.msg_version = GDMA_MESSAGE_V2;
+
+	err = mana_send_request(apc->ac, &req, sizeof(req), &resp,
+				sizeof(resp));
+	if (err) {
+		netdev_err(ndev, "Failed to query link config: %d\n", err);
+		return err;
+	}
+
+	err = mana_verify_resp_hdr(&resp.hdr, MANA_QUERY_LINK_CONFIG,
+				   sizeof(resp));
+	if (err || resp.hdr.status) {
+		netdev_err(ndev, "Failed to query link config: %d, 0x%x\n",
+			   err, resp.hdr.status);
+		return err ? err : -EOPNOTSUPP;
+	}
+
+	if (resp.qos_unconfigured)
+		return -EINVAL;
+
+	apc->max_speed = resp.qos_speed_mbps;
+
+	return 0;
+}
+
 int mana_create_wq_obj(struct mana_port_context *apc,
 		       mana_handle_t vport,
 		       u32 wq_type, struct mana_obj_spec *wq_spec,
